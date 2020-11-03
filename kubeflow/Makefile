@@ -11,7 +11,7 @@ PRIVATE_GKE=$(shell yq r ./instance/settings.yaml gkePrivate true)
 KFCTXT=$(NAME)
 
 # Path to kustomize directories
-GCP_CONFIG=./instance/gcp_config
+GCP_CONFIG=./instance/gcp_config/custom
 KF_DIR=./instance/kustomize
 
 APP_DIR=.
@@ -26,10 +26,12 @@ BUILD_DIR=.build
 
 # The URL you want to fetch manifests from
 # TODO(jlewi): Should we make this a setter to make it easier to update programmatically?
-MANIFESTS_URL=https://github.com/kubeflow/manifests.git@v1.1.0
+MANIFESTS_URL=https://github.com/dawnlight-ai-for-good/manifests.git@v1.1.0-dawnlight.1
 
 #***********************************************************************************************************************
 # Edit this section to set the values specific to your deployment
+
+SERVICE_ACCOUNT_KEY_FILE=./credentials.json
 
 .PHONY: set-values
 set-values:
@@ -42,6 +44,9 @@ set-values:
 	kpt cfg set ./upstream/manifests/gcp gcloud.compute.zone <ZONE>
 	kpt cfg set ./upstream/manifests/gcp location <REGION OR ZONE>
 	kpt cfg set ./upstream/manifests/gcp log-firewalls false
+
+	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom name <YOUR_KF_NAME>
+	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom location <REGION OR ZONE>
 
 	kpt cfg set ./upstream/manifests/stacks/gcp name <YOUR_KF_NAME>
 	kpt cfg set ./upstream/manifests/stacks/gcp gcloud.core.project <PROJECT_TO_DEPLOY_IN>
@@ -111,6 +116,10 @@ hydrate-asm:
 .PHONY: hydrate-kubeflow
 hydrate-kubeflow:
 	#************************************************************************************
+	# Kubernetes gpu driver
+	mkdir -p $(BUILD_DIR)/gpu-driver
+	kustomize build --load_restrictor none -o $(BUILD_DIR)/gpu-driver $(KF_DIR)/gpu-driver
+
 	# Hydrate kubeflow applications
 	mkdir -p $(BUILD_DIR)/namespaces
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/namespaces  ${KF_DIR}/namespaces
@@ -132,7 +141,7 @@ hydrate-kubeflow:
 	mkdir -p $(BUILD_DIR)/iap-ingress
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/iap-ingress $(KF_DIR)/iap-ingress
 	mkdir -p $(BUILD_DIR)/kubeflow-apps
-	kustomize build --load_restrictor none -o $(BUILD_DIR)/kubeflow-apps $(KF_DIR)/kubeflow-apps
+	kustomize build --load_restrictor none -o $(BUILD_DIR)/kubeflow-apps $(KF_DIR)/kubeflow-apps/custom
 	mkdir -p $(BUILD_DIR)/kubeflow-apps
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/kubeflow-istio $(KF_DIR)/kubeflow-istio
 	mkdir -p $(BUILD_DIR)/metacontroller
@@ -184,20 +193,32 @@ apply-asm: hydrate
 	# TODO(jlewi): Should we use the newer version in asm/asm
 	# istioctl manifest --context=${KFCTXT} apply -f ./manifests/gcp/v2/asm/istio-operator.yaml
 	# TODO(jlewi): Switch to anthoscli once it supports generating manifests
-	# anthoscli apply -f ./manifests/gcp/v2/asm/istio-operator.yaml	
+	# anthoscli apply -f ./manifests/gcp/v2/asm/istio-operator.yaml
 
 .PHONY: apply-kubeflow
 apply-kubeflow: hydrate
-	# Apply kubeflow apps
+	# Apply kubernetes gpu driver
+	kubectl --context=$(KFCTXT) apply -f ./$(BUILD_DIR)/gpu-driver
+
+	# Apply kubeflow namespaces
 	kubectl --context=$(KFCTXT) apply -f ./$(BUILD_DIR)/namespaces
+
+	# Create service account key secret to access cloud sql through cloud sql proxy
+ifeq ("$(wildcard $(SERVICE_ACCOUNT_KEY_FILE))","")
+	PROJECT=$(shell yq r ./instance/settings.yaml project)
+	gcloud iam service-accounts keys create $(SERVICE_ACCOUNT_KEY_FILE) --iam-account $(NAME)-vm@$(PROJECT).iam.gserviceaccount.com
+	kubectl create secret -n kubeflow generic cloudsql-instance-credentials --from-file $(SERVICE_ACCOUNT_KEY_FILE)
+endif
+
+	# Apply kubeflow apps
 	kubectl --context=$(KFCTXT) apply -f ./$(BUILD_DIR)/kubeflow-istio
 	kubectl --context=$(KFCTXT) apply -f ./$(BUILD_DIR)/metacontroller
 	kubectl --context=$(KFCTXT) apply -f ./$(BUILD_DIR)/application
 	kubectl --context=$(KFCTXT) apply -f ./$(BUILD_DIR)/cloud-endpoints
-	kubectl --context=$(KFCTXT) apply -f ./$(BUILD_DIR)/iap-ingress	
+	kubectl --context=$(KFCTXT) apply -f ./$(BUILD_DIR)/iap-ingress
 
 	# Apply the namespace first
-	kubectl --context=${KFCTXT} apply -f ./$(BUILD_DIR)/knative/~g_v1_namespace_knative-serving.yaml 
+	kubectl --context=${KFCTXT} apply -f ./$(BUILD_DIR)/knative/~g_v1_namespace_knative-serving.yaml
 	kubectl --context=${KFCTXT} apply --recursive=true -f ./$(BUILD_DIR)/knative
 
 	# Due to https://github.com/jetstack/cert-manager/issues/2208
@@ -304,6 +325,7 @@ iap-secret: check-iap
 .PHONY: wait-gcp
 wait-gcp:
 	kubectl --context=$(MGMTCTXT) wait --for=condition=Ready --timeout=600s  containercluster $(NAME)
+	kubectl --context=$(MGMTCTXT) wait --for=condition=Ready --timeout=600s containernodepool --all
 
 # Create a kubeconfig context for the kubeflow cluster
 .PHONY: create-ctxt
@@ -315,3 +337,9 @@ create-ctxt:
 # Delete gcp resources
 delete-gcp:
 	kubectl	--context=$(MGMTCTXT) delete -f $(BUILD_DIR)/gcp_config
+	rm -f $(SERVICE_ACCOUNT_KEY_FILE)
+
+# Delete kubeflow cluster context
+.PHONY: delete-ctxt
+delete-ctxt:
+	kubectl config delete-context $(KFCTXT)
