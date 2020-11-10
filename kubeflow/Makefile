@@ -26,7 +26,7 @@ BUILD_DIR=.build
 
 # The URL you want to fetch manifests from
 # TODO(jlewi): Should we make this a setter to make it easier to update programmatically?
-MANIFESTS_URL=https://github.com/dawnlight-ai-for-good/manifests.git@v1.1.0-dawnlight.1
+MANIFESTS_URL=https://github.com/dawnlight-ai-for-good/manifests.git@v1.1.0-dawnlight.2
 
 #***********************************************************************************************************************
 # Edit this section to set the values specific to your deployment
@@ -55,6 +55,10 @@ set-values:
 	kpt cfg set ./instance location <YOUR_REGION or ZONE>
 	kpt cfg set ./instance gcloud.core.project <YOUR PROJECT>
 	kpt cfg set ./instance email <YOUR_EMAIL_ADDRESS>
+
+	# TODO(yunpeng): Wrap the non-kpt variable overrides into a helper script.
+	PROJECT=<PROJECT> REGION=<REGION> MYSQL_INSTANCE=<MYSQL_CONNECTION_NAME> envsubst < ./upstream/manifests/metadata/overlays/google-cloudsql/custom/params.env.tmpl > ./upstream/manifests/metadata/overlays/google-cloudsql/custom/params.env
+	PROJECT=<PROJECT> REGION=<REGION> MYSQL_INSTANCE=<MYSQL_CONNECTION_NAME> envsubst < ./upstream/manifests/pipeline/installs/custom/params.env.tmpl > ./upstream/manifests/pipeline/installs/custom/params.env
 
 #************************************************************************************************************************
 #
