@@ -26,12 +26,16 @@ BUILD_DIR=.build
 
 # The URL you want to fetch manifests from
 # TODO(jlewi): Should we make this a setter to make it easier to update programmatically?
-MANIFESTS_URL=https://github.com/dawnlight-ai-for-good/manifests.git@v1.1.0-dawnlight.3
+MANIFESTS_URL=https://github.com/dawnlight-ai-for-good/manifests.git@v1.1.0-dawnlight.4
 
 #***********************************************************************************************************************
 # Edit this section to set the values specific to your deployment
 
 SERVICE_ACCOUNT_KEY_FILE=./credentials.json
+MINIO_ACCESS_KEY=$(shell gcloud secrets versions access latest --secret="kf-shared-minio-access-key")
+MINIO_SECRET_KEY=$(shell gcloud secrets versions access latest --secret="kf-shared-minio-secret-key")
+MYSQL_USERNAME=$(shell gcloud secrets versions access latest --secret="kf-shared-mysql-username")
+MYSQL_PASSWORD=$(shell gcloud secrets versions access latest --secret="kf-shared-mysql-password")
 
 .PHONY: set-values
 set-values:
@@ -60,6 +64,9 @@ set-values:
 	PROJECT=<PROJECT> REGION=<REGION> MYSQL_INSTANCE=<MYSQL_CONNECTION_NAME> envsubst < ./upstream/manifests/metadata/overlays/google-cloudsql/custom/params.env.tmpl > ./upstream/manifests/metadata/overlays/google-cloudsql/custom/params.env
 	PROJECT=<PROJECT> REGION=<REGION> MYSQL_INSTANCE=<MYSQL_CONNECTION_NAME> envsubst < ./upstream/manifests/pipeline/installs/custom/params.env.tmpl > ./upstream/manifests/pipeline/installs/custom/params.env
 
+	MINIO_ACCESS_KEY=$(MINIO_ACCESS_KEY) MINIO_SECRET_KEY=$(MINIO_SECRET_KEY) envsubst < ./upstream/manifests/pipeline/upstream/env/platform-agnostic/minio/minio-artifact-secret.env.tmpl > ./upstream/manifests/pipeline/upstream/env/platform-agnostic/minio/minio-artifact-secret.env
+	MYSQL_USERNAME=$(MYSQL_USERNAME) MYSQL_PASSWORD=$(MYSQL_PASSWORD) envsubst < ./upstream/manifests/metadata/overlays/google-cloudsql/custom/params-db-secret.env.tmpl > ./upstream/manifests/metadata/overlays/google-cloudsql/custom/params-db-secret.env
+	MYSQL_USERNAME=$(MYSQL_USERNAME) MYSQL_PASSWORD=$(MYSQL_PASSWORD) envsubst < ./upstream/manifests/pipeline/installs/custom/params-db-secret.env.tmpl > ./upstream/manifests/pipeline/installs/custom/params-db-secret.env
 #************************************************************************************************************************
 #
 # Package management
