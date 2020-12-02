@@ -26,7 +26,7 @@ BUILD_DIR=.build
 
 # The URL you want to fetch manifests from
 # TODO(jlewi): Should we make this a setter to make it easier to update programmatically?
-MANIFESTS_URL=https://github.com/dawnlight-ai-for-good/manifests.git@v1.1.0-dawnlight.2
+MANIFESTS_URL=https://github.com/dawnlight-ai-for-good/manifests.git@v1.1.0-dawnlight.3
 
 #***********************************************************************************************************************
 # Edit this section to set the values specific to your deployment
