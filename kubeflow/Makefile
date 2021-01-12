@@ -51,6 +51,14 @@ set-values:
 
 	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom name <YOUR_KF_NAME>
 	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom location <REGION OR ZONE>
+	kpt cfg create-setter ./upstream/manifests/gcp/v2/cnrm/cluster/custom default-nodepool-size default-nodepool-size --type integer
+	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom default-nodepool-size <DEFAULT_NODEPOOL_MAX_SIZE>
+	kpt cfg create-setter ./upstream/manifests/gcp/v2/cnrm/cluster/custom cpu-worker-nodepool-max-size cpu-worker-nodepool-max-size --type integer
+	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom cpu-worker-nodepool-max-size <CPU_WORKER_NODEPOOL_MAX_SIZE>
+	kpt cfg create-setter ./upstream/manifests/gcp/v2/cnrm/cluster/custom gpu-t4-worker-nodepool-max-size gpu-t4-worker-nodepool-max-size --type integer
+	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom gpu-t4-worker-nodepool-max-size <GPU_WORKER_NODEPOOL_MAX_SIZE>
+	kpt cfg create-setter ./upstream/manifests/gcp/v2/cnrm/cluster/custom gpu-nvidia-tesla-t4-limit gpu-nvidia-tesla-t4-limit --type integer
+	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom gpu-nvidia-tesla-t4-limit <NVIDIA_TESLA_T4_GPU_MAX_LIMIT>
 
 	kpt cfg set ./upstream/manifests/stacks/gcp name <YOUR_KF_NAME>
 	kpt cfg set ./upstream/manifests/stacks/gcp gcloud.core.project <PROJECT_TO_DEPLOY_IN>
@@ -136,7 +144,7 @@ hydrate-kubeflow:
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/namespaces  ${KF_DIR}/namespaces
 
 	mkdir -p $(BUILD_DIR)/application
-	kustomize build --load_restrictor none -o $(BUILD_DIR)/application $(KF_DIR)/application
+	kustomize build --load_restrictor none -o $(BUILD_DIR)/application $(KF_DIR)/application/custom
 
 	mkdir -p $(BUILD_DIR)/knative
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/knative $(KF_DIR)/knative
@@ -148,7 +156,7 @@ hydrate-kubeflow:
 	mkdir -p $(BUILD_DIR)/cert-manager-kube-system-resources
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/cert-manager-kube-system-resources $(KF_DIR)/cert-manager-kube-system-resources
 	mkdir -p $(BUILD_DIR)/cloud-endpoints
-	kustomize build --load_restrictor none -o $(BUILD_DIR)/cloud-endpoints $(KF_DIR)/cloud-endpoints
+	kustomize build --load_restrictor none -o $(BUILD_DIR)/cloud-endpoints $(KF_DIR)/cloud-endpoints/custom
 	mkdir -p $(BUILD_DIR)/iap-ingress
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/iap-ingress $(KF_DIR)/iap-ingress
 	mkdir -p $(BUILD_DIR)/kubeflow-apps
