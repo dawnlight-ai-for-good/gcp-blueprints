@@ -26,7 +26,7 @@ BUILD_DIR=.build
 
 # The URL you want to fetch manifests from
 # TODO(jlewi): Should we make this a setter to make it easier to update programmatically?
-MANIFESTS_URL=https://github.com/dawnlight-ai-for-good/manifests.git@v1.1.0-dawnlight.4
+MANIFESTS_URL=https://github.com/dawnlight-ai-for-good/manifests.git@v1.1.0-dawnlight.6
 
 #***********************************************************************************************************************
 # Edit this section to set the values specific to your deployment
@@ -130,7 +130,7 @@ hydrate-gcp:
 hydrate-asm:
 	#************************************************************************************
 	# hydrate asm
-	istioctl manifest generate -f $(MANIFESTS_DIR)/gcp/v2/asm/istio-operator.yaml -o $(BUILD_DIR)/istio
+	istioctl manifest generate -f $(MANIFESTS_DIR)/gcp/v2/asm/custom/istio-operator.yaml -o $(BUILD_DIR)/istio
 
 .PHONY: hydrate-kubeflow
 hydrate-kubeflow:
@@ -141,16 +141,16 @@ hydrate-kubeflow:
 
 	# Hydrate kubeflow applications
 	mkdir -p $(BUILD_DIR)/namespaces
-	kustomize build --load_restrictor none -o $(BUILD_DIR)/namespaces  ${KF_DIR}/namespaces
+	kustomize build --load_restrictor none -o $(BUILD_DIR)/namespaces ${KF_DIR}/namespaces
 
 	mkdir -p $(BUILD_DIR)/application
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/application $(KF_DIR)/application/custom
 
 	mkdir -p $(BUILD_DIR)/knative
-	kustomize build --load_restrictor none -o $(BUILD_DIR)/knative $(KF_DIR)/knative
+	kustomize build --load_restrictor none -o $(BUILD_DIR)/knative $(KF_DIR)/knative/custom
 
 	mkdir -p $(BUILD_DIR)/cert-manager
-	kustomize build --load_restrictor none -o $(BUILD_DIR)/cert-manager $(KF_DIR)/cert-manager
+	kustomize build --load_restrictor none -o $(BUILD_DIR)/cert-manager $(KF_DIR)/cert-manager/custom
 	mkdir -p $(BUILD_DIR)/cert-manager-crds
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/cert-manager-crds $(KF_DIR)/cert-manager-crds
 	mkdir -p $(BUILD_DIR)/cert-manager-kube-system-resources
@@ -158,13 +158,13 @@ hydrate-kubeflow:
 	mkdir -p $(BUILD_DIR)/cloud-endpoints
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/cloud-endpoints $(KF_DIR)/cloud-endpoints/custom
 	mkdir -p $(BUILD_DIR)/iap-ingress
-	kustomize build --load_restrictor none -o $(BUILD_DIR)/iap-ingress $(KF_DIR)/iap-ingress
+	kustomize build --load_restrictor none -o $(BUILD_DIR)/iap-ingress $(KF_DIR)/iap-ingress/custom
 	mkdir -p $(BUILD_DIR)/kubeflow-apps
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/kubeflow-apps $(KF_DIR)/kubeflow-apps/custom
 	mkdir -p $(BUILD_DIR)/kubeflow-apps
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/kubeflow-istio $(KF_DIR)/kubeflow-istio
 	mkdir -p $(BUILD_DIR)/metacontroller
-	kustomize build --load_restrictor none -o $(BUILD_DIR)/metacontroller $(KF_DIR)/metacontroller
+	kustomize build --load_restrictor none -o $(BUILD_DIR)/metacontroller $(KF_DIR)/metacontroller/custom
 	mkdir -p $(BUILD_DIR)/kubeflow-issuer
 	kustomize build --load_restrictor none -o $(BUILD_DIR)/kubeflow-issuer $(KF_DIR)/kubeflow-issuer
 
