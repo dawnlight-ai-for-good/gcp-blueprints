@@ -26,7 +26,7 @@ BUILD_DIR=.build
 
 # The URL you want to fetch manifests from
 # TODO(jlewi): Should we make this a setter to make it easier to update programmatically?
-MANIFESTS_URL=https://github.com/dawnlight-ai-for-good/manifests.git@v1.1.0-dawnlight.6
+MANIFESTS_URL=https://github.com/dawnlight-ai-for-good/manifests.git@v1.1.0-dawnlight.7
 
 #***********************************************************************************************************************
 # Edit this section to set the values specific to your deployment
@@ -59,6 +59,10 @@ set-values:
 	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom gpu-t4-worker-nodepool-max-size <GPU_WORKER_NODEPOOL_MAX_SIZE>
 	kpt cfg create-setter ./upstream/manifests/gcp/v2/cnrm/cluster/custom gpu-nvidia-tesla-t4-limit gpu-nvidia-tesla-t4-limit --type integer
 	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom gpu-nvidia-tesla-t4-limit <NVIDIA_TESLA_T4_GPU_MAX_LIMIT>
+	kpt cfg create-setter ./upstream/manifests/gcp/v2/cnrm/cluster/custom node-pool-gpu01.gpu-count-per-node node-pool-gpu01.gpu-count-per-node --type integer
+	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom node-pool-gpu01.gpu-count-per-node <NODE_POOL_GPU01_GPU_COUNT_PER_NODE>
+	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom node-pool-cpu01.instance-type <NODE_POOL_CPU01_INSTANCE_TYPE>
+	kpt cfg set ./upstream/manifests/gcp/v2/cnrm/cluster/custom node-pool-gpu01.instance-type <NODE_POOL_GPU01_INSTANCE_TYPE>
 
 	kpt cfg set ./upstream/manifests/stacks/gcp name <YOUR_KF_NAME>
 	kpt cfg set ./upstream/manifests/stacks/gcp gcloud.core.project <PROJECT_TO_DEPLOY_IN>
